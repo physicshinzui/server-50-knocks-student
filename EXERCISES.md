@@ -283,3 +283,38 @@ Python 3.11の `lab-py` を作成し、環境一覧で確認してください�
 ### 050　ディスク使用量を確認して記録する
 
 サーバのログインノードで `df -h ~` を実行し、ホームディレクトリの空き容量を確認してください。続けて、教材の最上位ディレクトリで `du -sh work > work/disk-usage.txt` を実行し、`work` ディレクトリの使用量を保存します。保存したファイルを開き、`server-check 050` では記録された `work` のサイズを答えてください。
+
+## プラスα：PATHの仕組みを理解する（051〜055）
+
+ここからの5問は発展課題（任意）です。コマンドがどこから見つかって実行されるか（環境変数 `PATH` の仕組み）を体感します。
+
+### 051　PATHの中身とコマンドの実体を調べる
+
+ログインノードで `echo "$PATH"` を実行し、コロン（`:`）区切りで並んでいるディレクトリ一覧を確認してください。続けて `which qsub` を実行し、`qsub` コマンドの実体がどのディレクトリにあるかを確認します。`server-check 051` では、`which qsub` で表示されたパスを答えてください。
+
+### 052　conda activateとPATHの関係を確かめる
+
+`conda activate lab-py` を実行する前後で、`echo "$PATH"` の先頭と `which python` の出力を比べてください。`lab-py` を有効にした端末で `server-check 052` を実行し、`which python` で表示されたパスと「`PATH` の先頭に環境の `bin` が追加されることでコマンドが切り替わるか（`yes`/`no`）」を答えてください。
+
+### 053　自作コマンドに実行権限を付けてパス指定で実行する
+
+`mkdir -p work/bin` を実行し、次の内容で `work/bin/mytool` を作成してください。
+
+```bash
+#!/bin/bash
+echo "hello from mytool"
+```
+
+`chmod +x work/bin/mytool` で実行権限を付け、コマンド名だけの `mytool`（`command not found` になること）と、パスを指定した `./work/bin/mytool`（実行できること）の違いを確かめてください。作業後、`server-check 053` を実行してください（入力は不要で、作業内容が自動で判定されます）。
+
+### 054　PATHを一時的に追加してコマンド名だけで実行する
+
+教材の最上位ディレクトリで `export PATH="$PWD/work/bin:$PATH"` を実行し、`which mytool` と `mytool` が通ることを確認してください。
+
+**注意：** 末尾の `:$PATH` を付け忘れて `export PATH="$PWD/work/bin"` のように上書きすると、`ls` などの基本コマンドまで見つからなくなります（誤って上書きした場合は一度 `exit` してSSH接続し直せば元に戻ります）。
+
+`PATH` を追加した端末で `server-check 054` を実行してください（入力は不要で、`mytool` と `ls` の両方が見つかることが自動で判定されます）。
+
+### 055　PBSジョブ内でPATHを設定して自作コマンドを実行する
+
+端末で一時的に実行した `export PATH=...` は別のログインや計算ノードのジョブには引き継がれないため、ジョブスクリプト内で明示的に設定します。`templates/path_job.sh` を `work/path_job.sh` にコピーし、`[ここをwork/binへのパスに変更]` の部分（角括弧ごと）を `$PBS_O_WORKDIR/work/bin` に書き換えて投入してください。終了後、`work/runs/ジョブID/run.log` を開き、`tool=` と `output=` を確認します。`server-check 055` では、投入したジョブIDとログに表示された `tool=` の値を答えてください。

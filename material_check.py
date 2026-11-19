@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -191,9 +192,10 @@ def validate(number, root, progress):
         script, directives = script_settings(root, 'work/first.sh', 1, '256mb', '00:03:00')
         need('ngpus=0' in directives and has_pbs_option(script, f'#PBS -q {queue}'), 'GPU数とキューを確認してください。')
         need(has_command(script, f'bash tools/run_lesson.sh first {SAMPLE}'), '配布済みの入力を使ってください。')
-    elif number in (4, 8, 11, 16, 32, 39, 42, 43, 44, 46, 48):
+    elif number in (4, 8, 11, 16, 32, 39, 42, 43, 44, 46, 48, 55):
         prompt = {42: 'work/gpu.sh のジョブID', 43: 'templates/bad_cmd.sh のジョブID',
-                  44: '計算ノードで控えたジョブID', 48: '取消に使ったジョブID'}
+                  44: '計算ノードで控えたジョブID', 48: '取消に使ったジョブID',
+                  55: 'work/path_job.sh のジョブID'}
         job_id = submitted_id(prompt[number]) if number in prompt else submitted_id()
         if number in (4, 8, 11, 16, 32, 39):
             name, label = {4: ('s50first', 'first'), 8: ('s50retry', 'retry'),
@@ -227,6 +229,16 @@ def validate(number, root, progress):
             fields = pbs_status(job_id)
             need(fields and owned_job(fields, 's50cancel') and fields.get('job_state') == 'H',
                  '自分の取消練習用ジョブが保留中であることを確認してください。')
+        elif number == 55:
+            script = lines(root, 'work/path_job.sh')
+            need(any('export PATH=' in line.split('#', 1)[0] and '$PATH' in line.split('#', 1)[0] for line in script),
+                 'work/path_job.sh に export PATH="...:$PATH" を記述してください。')
+            fields = log_fields(root, job_id)
+            need(fields.get('lesson') == 'path' and fields.get('status') == 'OK' and
+                 fields.get('output') == 'hello from mytool' and
+                 fields.get('tool', '').endswith('work/bin/mytool'),
+                 'work/path_job.sh が正常終了し、mytool が実行されたログを確認してください。')
+            answer('ログに表示された tool の値', fields['tool'])
         else:
             need(job_id == saved_job(46), '046で確認したIDを使ってください。')
             fields = pbs_status(job_id)
@@ -359,6 +371,29 @@ def validate(number, root, progress):
         match = re.fullmatch(r'(\S+)\s+(?:\./)?work/?', usage[0])
         need(match, 'du -sh work の出力形式を確認してください。')
         answer('work/disk-usage.txt に記録された work のサイズ', match.group(1))
+    elif number == 51:
+        qsub_path = shutil.which('qsub')
+        need(qsub_path, 'qsub コマンドが見つかりません。')
+        answer('which qsub で表示されたパス', qsub_path)
+    elif number == 52:
+        active_env('lab-py')
+        py_path = shutil.which('python')
+        need(py_path and 'lab-py' in Path(py_path).parts,
+             'lab-py を有効にした端末で which python を確認してください。')
+        answer('which python で表示されたパス', py_path)
+        answer('PATHの先頭に環境のbinが追加されることでコマンドが切り替わりますか（yes/no）', 'yes')
+    elif number == 53:
+        mytool = root / 'work/bin/mytool'
+        need(mytool.is_file() and os.access(mytool, os.X_OK),
+             'work/bin/mytool を作成し、chmod +x で実行権限を付けてください。')
+        out = subprocess.run([str(mytool)], capture_output=True, text=True, timeout=10)
+        need(out.returncode == 0 and out.stdout.strip() == 'hello from mytool',
+             'work/bin/mytool を実行すると hello from mytool と出力されるようにしてください。')
+    elif number == 54:
+        found = shutil.which('mytool')
+        need(found and Path(found).resolve() == (root / 'work/bin/mytool').resolve(),
+             'export PATH="$PWD/work/bin:$PATH" を実行した端末で判定してください。')
+        need(shutil.which('ls'), '$PATH を上書きせず、末尾に :$PATH を残してください。')
     else:
         raise ValueError('unknown question')
     return {}

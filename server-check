@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent
 PROGRESS = ROOT / 'progress' / 'completed-2026.50-r3.json'
 VERSION = 7
 TOTAL = 50
+MAX_NUMBER = 55
 
 
 def load_progress():
@@ -22,7 +23,7 @@ def load_progress():
         return {}
     data = json.loads(PROGRESS.read_text(encoding='utf-8'))
     need(isinstance(data, dict) and
-         all(key in {f'{n:03d}' for n in range(1, TOTAL + 1)} and isinstance(record, dict)
+         all(key in {f'{n:03d}' for n in range(1, MAX_NUMBER + 1)} and isinstance(record, dict)
              for key, record in data.items()),
          '進捗ファイルの形式を確認してください。')
     return data
@@ -52,25 +53,29 @@ def format_numbers(numbers):
 
 
 def show_progress(progress):
-    done = {int(number) for number in progress}
-    missing = set(range(1, TOTAL + 1)) - done
-    print(f'完了: {len(done)} / {TOTAL}')
-    print('解けた問題: ' + format_numbers(done))
-    print('未完了の問題: ' + format_numbers(missing))
-    print(f'最初の未完了: {min(missing):03d}' if missing else '全問完了')
+    done_all = {int(number) for number in progress}
+    done_req = {n for n in done_all if 1 <= n <= TOTAL}
+    missing_req = set(range(1, TOTAL + 1)) - done_req
+    done_bonus = {n for n in done_all if TOTAL < n <= MAX_NUMBER}
+    bonus_total = MAX_NUMBER - TOTAL
+    print(f'必修完了: {len(done_req)} / {TOTAL}')
+    print('解けた問題: ' + format_numbers(done_req))
+    print('未完了の問題: ' + format_numbers(missing_req))
+    print(f'最初の未完了: {min(missing_req):03d}' if missing_req else '必修全問完了')
+    print(f'プラスα完了: {len(done_bonus)} / {bonus_total} ({format_numbers(done_bonus)})')
 
 
 def main():
     parser = argparse.ArgumentParser(description='サーバ演習50本ノックの判定')
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('number', nargs='?', help='問題番号001〜050')
+    mode.add_argument('number', nargs='?', help='問題番号001〜050（プラスα: 051〜055）')
     mode.add_argument('--progress', action='store_true', help='進捗を表示')
     args = parser.parse_args()
     number = None
     if args.number is not None:
         if not (args.number.isascii() and args.number.isdecimal() and len(args.number) <= 3 and
-                1 <= int(args.number) <= TOTAL):
-            parser.error('問題番号は001から050です。')
+                1 <= int(args.number) <= MAX_NUMBER):
+            parser.error(f'問題番号は001から{MAX_NUMBER:03d}です（051〜{MAX_NUMBER:03d}はプラスα）。')
         number = int(args.number)
     if number is None and not args.progress:
         parser.print_usage()
