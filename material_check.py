@@ -184,9 +184,9 @@ def validate(number, root, progress):
     queue = config['cpu_queue']
     gpu_queue = config['gpu_queue']
     if number == 1:
-        need(Path.cwd().resolve() == root, 'SSHで接続し、教材の最上位に移動してください。')
+        need(Path.cwd().resolve() == root, 'SSHで接続し、教材ディレクトリ（~/server-50-knocks-student）へ移動してください。')
     elif number == 2:
-        need(Path.cwd().resolve() == root, '教材の最上位で現在地を確認してください。')
+        need(Path.cwd().resolve() == root, '教材ディレクトリ（~/server-50-knocks-student）で現在地を確認してください。')
         answer('接続先のホスト名', socket.gethostname())
     elif number == 3:
         script, directives = script_settings(root, 'work/first.sh', 1, '256mb', '00:03:00')

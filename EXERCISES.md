@@ -2,7 +2,7 @@
 
 この問題集では、bbserverに接続してジョブの投入・結果確認・エラー修正から始め、ファイル転送、Python環境の構築、資源指定、対話型ジョブと取消までを順に演習します。
 
-ローカルの端末からサーバへ接続したら、初回のみ `git clone` でホームディレクトリに教材を取得し、教材の最上位ディレクトリへ移動してください（2回目以降は `git clone` は不要です）。
+ローカルの端末からサーバへ接続したら、初回のみ `git clone` でホームディレクトリに教材を取得し、教材ディレクトリ（`~/server-50-knocks-student`）へ移動してください（2回目以降は `git clone` は不要です）。
 
 ```bash
 ssh bbserver
@@ -21,11 +21,11 @@ source ./setup.sh
 
 ### 001　bbserverに接続して教材を取得する
 
-ローカルのSSH設定（`~/.ssh/config`）に授業で案内した接続先を登録し、`ssh bbserver` で接続してください。ホームディレクトリで `git clone https://github.com/physicshinzui/server-50-knocks-student.git` を実行して教材を取得し、教材の最上位ディレクトリ（`~/server-50-knocks-student`）へ移動して `source ./setup.sh` を実行します。作業後、`server-check 001` を実行してください（入力は不要で、作業内容が自動で判定されます）。
+ローカルのSSH設定（`~/.ssh/config`）に授業で案内した接続先を登録し、`ssh bbserver` で接続してください。ホームディレクトリで `git clone https://github.com/physicshinzui/server-50-knocks-student.git` を実行して教材を取得し、`~/server-50-knocks-student` へ移動して `source ./setup.sh` を実行します。作業後、`server-check 001` を実行してください（入力は不要で、作業内容が自動で判定されます）。
 
 ### 002　接続先と現在地を確かめる
 
-`hostname` で接続先のホスト名を表示し、`pwd` で教材の最上位ディレクトリにいることを確認してください。`server-check 002` の質問には、表示されたホスト名を答えてください。
+`hostname` で接続先のホスト名を表示し、`pwd` で `~/server-50-knocks-student` にいることを確認してください。`server-check 002` の質問には、表示されたホスト名を答えてください。
 
 ### 003　最初のジョブの資源を設定する
 
@@ -33,7 +33,7 @@ source ./setup.sh
 
 ### 004　最初のジョブを投入する
 
-教材の最上位ディレクトリから `work/first.sh` を投入し、画面に表示されたジョブIDを使ってそのジョブを照会してください。`server-check 004` でも同じIDを入力します。すでにジョブが終了して `qstat` に表示されない場合は、ログが作られるまで少し待ってください。
+`~/server-50-knocks-student` で `work/first.sh` を投入し、画面に表示されたジョブIDを使ってそのジョブを照会してください。`server-check 004` でも同じIDを入力します。すでにジョブが終了して `qstat` に表示されない場合は、ログが作られるまで少し待ってください。
 
 ### 005　待機中のジョブを見分ける
 
@@ -45,11 +45,11 @@ source ./setup.sh
 
 ### 007　最初のジョブの結果を確かめる
 
-004で控えたジョブIDを使い、`work/runs/ジョブID/run.log` の末尾で終了状態を確認してください。同じディレクトリの `result.json` を開き、`server-check 007` で処理されたデータの件数を答えてください。
+004で控えたジョブIDを使い、`work/runs/ジョブID/run.log` の末尾に `status=OK` と書かれており、ジョブが正常終了していることを確認してください。そのうえで同じディレクトリの `result.json` を開き、`server-check 007` で処理されたデータの件数（`count` の値）を答えてください。
 
 ### 008　入力エラーのあるジョブを投入する
 
-`templates/bad_path.sh` を `work/retry.sh` にコピーし、内容を変えずに投入してください。表示されたジョブIDで今回のログを探します。`server-check 008` ではそのIDを入力してください。
+`templates/bad_path.sh` を `work/retry.sh` にコピーし、コピーした `work/retry.sh` の内容を変えずに `qsub` で投入してください。表示されたジョブIDで今回のログを探します。`server-check 008` ではそのIDを入力してください。
 
 ### 009　ログから失敗の原因を特定する
 
@@ -57,7 +57,7 @@ source ./setup.sh
 
 ### 010　入力ファイルの指定を直す
 
-`work/retry.sh` が配布済みの `data/original/samples.tsv` を読むように直してください。教材の最上位から見たパスで指定します。
+`work/retry.sh` が配布済みの `data/original/samples.tsv` を読むように直してください。`~/server-50-knocks-student` から見た相対パスで指定します。
 
 ```bash
 bash tools/run_lesson.sh retry data/original/missing.tsv # 第2引数を修正
@@ -252,13 +252,13 @@ Python 3.11の `lab-py` を作成し、環境一覧で確認してください�
 
 ### 043　起動前エラーをPBSの出力ファイルから調べる
 
-`templates/bad_cmd.sh` をそのまま投入してください。このジョブは `run_lesson.sh` に到達する前に失敗するため、`work/runs/ジョブID/run.log` は作られません。ジョブ終了後、教材の最上位ディレクトリにPBSが作成する出力ファイル（`s50badcmd.o` の後ろにジョブIDの番号が付いたファイル）を開いてエラーを確認してください。`server-check 043` では、投入したジョブIDと、見つからなかったコマンド名を答えてください。
+`templates/bad_cmd.sh` をそのまま投入してください。このジョブは `run_lesson.sh` に到達する前に失敗するため、`work/runs/ジョブID/run.log` は作られません。ジョブ終了後、`~/server-50-knocks-student` 直下にPBSが作成する出力ファイル（`s50badcmd.o` の後ろにジョブIDの番号が付いたファイル）を開いてエラーを確認してください。`server-check 043` では、投入したジョブIDと、見つからなかったコマンド名を答えてください。
 
 ## 対話型ジョブと取消（044〜050）
 
 ### 044　対話型ジョブを実行して戻る
 
-短時間の対話型ジョブを開始し、計算ノードで `hostname` と `echo "$PBS_JOBID"` を実行してください。教材の最上位ディレクトリへ移動し、`bash tools/run_lesson.sh interactive data/original/samples.tsv` で配布済みデータの集計を実行します。`exit` でログインノードに戻り、`server-check 044` では控えたジョブID（`echo "$PBS_JOBID"` の出力）と計算ノードのホスト名を答えてください。
+短時間の対話型ジョブを開始し、計算ノードで `hostname` と `echo "$PBS_JOBID"` を実行してください。`~/server-50-knocks-student` へ移動し、`bash tools/run_lesson.sh interactive data/original/samples.tsv` で配布済みデータの集計を実行します。`exit` でログインノードに戻り、`server-check 044` では控えたジョブID（`echo "$PBS_JOBID"` の出力）と計算ノードのホスト名を答えてください。
 
 ### 045　複数のログからエラー終了ジョブを検索する
 
@@ -282,7 +282,7 @@ Python 3.11の `lab-py` を作成し、環境一覧で確認してください�
 
 ### 050　ディスク使用量を確認して記録する
 
-サーバのログインノードで `df -h ~` を実行し、ホームディレクトリの空き容量を確認してください。続けて、教材の最上位ディレクトリで `du -sh work > work/disk-usage.txt` を実行し、`work` ディレクトリの使用量を保存します。保存したファイルを開き、`server-check 050` では記録された `work` のサイズを答えてください。
+サーバのログインノードで `df -h ~` を実行し、ホームディレクトリの空き容量を確認してください。続けて、`~/server-50-knocks-student` で `du -sh work > work/disk-usage.txt` を実行し、`work` ディレクトリの使用量を保存します。保存したファイルを開き、`server-check 050` では記録された `work` のサイズを答えてください。
 
 ## プラスα：PATHの仕組みを理解する（051〜055）
 
@@ -309,7 +309,7 @@ echo "hello from mytool"
 
 ### 054　PATHを一時的に追加してコマンド名だけで実行する
 
-教材の最上位ディレクトリで `export PATH="$PWD/work/bin:$PATH"` を実行し、`which mytool` と `mytool` が通ることを確認してください。
+`~/server-50-knocks-student` で `export PATH="$PWD/work/bin:$PATH"` を実行し、`which mytool` と `mytool` が通ることを確認してください。
 
 **注意：** 末尾の `:$PATH` を付け忘れて `export PATH="$PWD/work/bin"` のように上書きすると、`ls` などの基本コマンドまで見つからなくなります（誤って上書きした場合は一度 `exit` してSSH接続し直せば元に戻ります）。
 
