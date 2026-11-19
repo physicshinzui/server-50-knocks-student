@@ -1,0 +1,6 @@
+{
+  "release": "2026.50",
+  "cpu_queue": "cpu-s",
+  "gpu_queue": "gpu-s",
+  "python_env": "lab-py"
+}

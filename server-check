@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""Check exercises on the login node. Only qstat is used to query PBS."""
+import argparse
+from datetime import datetime, timezone
+import fcntl
+import json
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+from material_check import CheckError, need, validate
+
+ROOT = Path(__file__).resolve().parent
+PROGRESS = ROOT / 'progress' / 'completed-2026.50-r3.json'
+VERSION = 7
+TOTAL = 50
+
+
+def load_progress():
+    if not PROGRESS.exists():
+        return {}
+    data = json.loads(PROGRESS.read_text(encoding='utf-8'))
+    need(isinstance(data, dict) and
+         all(key in {f'{n:03d}' for n in range(1, TOTAL + 1)} and isinstance(record, dict)
+             for key, record in data.items()),
+         '進捗ファイルの形式を確認してください。')
+    return data
+
+
+def save_pass(number, metadata):
+    PROGRESS.parent.mkdir(exist_ok=True)
+    with PROGRESS.with_suffix('.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        progress = load_progress()
+        progress[f'{number:03d}'] = {'checked_at': datetime.now(timezone.utc).isoformat(), **metadata}
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=PROGRESS.parent, delete=False) as file:
+            json.dump(progress, file, indent=2, ensure_ascii=False, sort_keys=True)
+            file.write('\n')
+        os.replace(file.name, PROGRESS)
+
+
+def format_numbers(numbers):
+    ordered = sorted(numbers)
+    ranges = []
+    while ordered:
+        start = end = ordered.pop(0)
+        while ordered and ordered[0] == end + 1:
+            end = ordered.pop(0)
+        ranges.append(f'{start:03d}' if start == end else f'{start:03d}-{end:03d}')
+    return ', '.join(ranges) or 'なし'
+
+
+def show_progress(progress):
+    done = {int(number) for number in progress}
+    missing = set(range(1, TOTAL + 1)) - done
+    print(f'完了: {len(done)} / {TOTAL}')
+    print('解けた問題: ' + format_numbers(done))
+    print('未完了の問題: ' + format_numbers(missing))
+    print(f'最初の未完了: {min(missing):03d}' if missing else '全問完了')
+
+
+def main():
+    parser = argparse.ArgumentParser(description='サーバ演習50本ノックの判定')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('number', nargs='?', help='問題番号001〜050')
+    mode.add_argument('--progress', action='store_true', help='進捗を表示')
+    args = parser.parse_args()
+    number = None
+    if args.number is not None:
+        if not (args.number.isascii() and args.number.isdecimal() and len(args.number) <= 3 and
+                1 <= int(args.number) <= TOTAL):
+            parser.error('問題番号は001から050です。')
+        number = int(args.number)
+    if number is None and not args.progress:
+        parser.print_usage()
+        return 2
+
+    try:
+        need(os.environ.get('SSH_CONNECTION', '').strip() and not
+             (os.environ.get('PBS_JOBID') or os.environ.get('PBS_ENVIRONMENT')),
+             'SSHで接続したサーバのログインノードで実行してください。')
+        progress = load_progress()
+        if args.progress:
+            show_progress(progress)
+            return 0
+        metadata = validate(number, ROOT, progress)
+        save_pass(number, metadata)
+        print(f'PASS: Knock {number:03d}')
+        return 0
+    except (CheckError, OSError, ValueError, EOFError, KeyError, subprocess.TimeoutExpired) as error:
+        print(f'NOT YET: Knock {number:03d}' if number is not None else 'NOT YET')
+        print(str(error) or '回答を入力してください。')
+        return 1
+    except KeyboardInterrupt:
+        print('\n確認を中止しました。')
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

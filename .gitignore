@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Student work & progress outputs
+work/*
+!work/.gitkeep
+progress/*
+!progress/.gitkeep
+
+# PBS output/error files
+s50*.o*
+s50*.e*
