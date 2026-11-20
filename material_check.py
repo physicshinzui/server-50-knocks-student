@@ -374,13 +374,17 @@ def validate(number, root, progress):
     elif number == 51:
         qsub_path = shutil.which('qsub')
         need(qsub_path, 'qsub コマンドが見つかりません。')
-        answer('which qsub で表示されたパス', qsub_path)
+        home = str(Path.home())
+        aliases = [qsub_path.replace(home, '~', 1)] if qsub_path.startswith(home + '/') else []
+        answer('which qsub で表示されたパス', qsub_path, *aliases)
     elif number == 52:
         active_env('lab-py')
         py_path = shutil.which('python')
         need(py_path and 'lab-py' in Path(py_path).parts,
              'lab-py を有効にした端末で which python を確認してください。')
-        answer('which python で表示されたパス', py_path)
+        home = str(Path.home())
+        aliases = [py_path.replace(home, '~', 1)] if py_path.startswith(home + '/') else []
+        answer('which python で表示されたパス', py_path, *aliases)
         answer('PATHの先頭に環境のbinが追加されることでコマンドが切り替わりますか（yes/no）', 'yes')
     elif number == 53:
         mytool = root / 'work/bin/mytool'
